@@ -1,0 +1,8 @@
+node_modules
+.next
+.backtrack
+.env*.local
+*.log
+backtrack-agent
+docs
+tests

@@ -1,0 +1,34 @@
+services:
+  app:
+    image: ${APP_IMAGE}
+    # (users fill in their existing service config here)
+
+  backtrack-agent:
+    image: zeritzuu/backtrack-agent:latest
+    environment:
+      - BACKTRACK_TARGET=app
+      - BACKTRACK_IMAGE_TAG=${BACKTRACK_IMAGE_TAG:-unknown}
+      - BACKTRACK_ROLLBACK_ENABLED=true
+    volumes:
+      - backtrack-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8847:8847"
+
+  backtrack-dashboard:
+    image: zeritzuu/backtrack-dashboard:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - BACKTRACK_AGENT_URL=http://backtrack-agent:8847
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - backtrack-data:/app/.backtrack
+    ports:
+      - "3847:3847"
+    depends_on:
+      backtrack-agent:
+        condition: service_healthy
+
+volumes:
+  backtrack-data:

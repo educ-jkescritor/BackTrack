@@ -1,0 +1,75 @@
+# Dashboard is available at http://localhost:3847 once the stack is running.
+# On Linux, if localhost does not work, use http://127.0.0.1:3847 instead.
+
+services:
+  backtrack-dashboard:
+    image: zeritzuu/backtrack-dashboard:latest
+    build:
+      context: ./backtrack-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3847:3847"
+    # Allows containers to reach host services (e.g. Prometheus at localhost:9091).
+    # Required on Linux. Docker Desktop on Mac/Windows handles this automatically.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - BACKTRACK_AGENT_URL=http://backtrack-agent:8847
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      # Kubernetes mode: uncomment after enabling the kube volume above.
+      - KUBECONFIG=/root/.kube/config
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - backtrack-data:/app/.backtrack
+      - ${KUBE_DIR:-~/.kube}:/root/.kube:ro
+    networks:
+      - default
+      - kind
+    depends_on:
+      backtrack-agent:
+        condition: service_healthy
+
+  backtrack-agent:
+    image: zeritzuu/backtrack-agent:latest
+    build:
+      context: ./backtrack-agent
+      dockerfile: Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - BACKTRACK_TARGET=${BACKTRACK_TARGET:-}
+      - BACKTRACK_IMAGE_TAG=${BACKTRACK_IMAGE_TAG:-latest}
+      - BACKTRACK_MODE=${BACKTRACK_MODE:-docker}
+      - BACKTRACK_K8S_NAMESPACE=${BACKTRACK_K8S_NAMESPACE:-default}
+      - BACKTRACK_SCRAPE_INTERVAL=${BACKTRACK_SCRAPE_INTERVAL:-10}
+      - BACKTRACK_STABLE_SECONDS=${BACKTRACK_STABLE_SECONDS:-120}
+      - BACKTRACK_WINDOW_SECONDS=${BACKTRACK_WINDOW_SECONDS:-10}
+      - BACKTRACK_BASELINE_WINDOWS=${BACKTRACK_BASELINE_WINDOWS:-3}
+      - BACKTRACK_CORPUS_SIZE=${BACKTRACK_CORPUS_SIZE:-50}
+      - BACKTRACK_ROLLBACK_ENABLED=${BACKTRACK_ROLLBACK_ENABLED:-true}
+      - BACKTRACK_DATA_DIR=/data
+      # Kubernetes mode: uncomment after enabling the kube volume above.
+      - KUBECONFIG=/root/.kube/config
+    volumes:
+      - backtrack-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${KUBE_DIR:-~/.kube}:/root/.kube:ro
+    networks:
+      - default
+      - kind
+    ports:
+      - "8847:8847"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8847/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+# Uncomment if using kind cluster:
+networks:
+  kind:
+    external: true
+
+volumes:
+  backtrack-data:

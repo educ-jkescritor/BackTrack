@@ -1,0 +1,56 @@
+name: Backtrack Sidecar Injection
+
+on:
+  workflow_call:
+    inputs:
+      target_container:
+        description: "Name of the container to monitor"
+        required: true
+        type: string
+      image_tag:
+        description: "Current deployed image tag (usually git SHA)"
+        required: true
+        type: string
+
+jobs:
+  inject-backtrack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Backtrack environment
+        run: |
+          echo "BACKTRACK_IMAGE_TAG=${{ inputs.image_tag }}" >> "$GITHUB_ENV"
+          echo "BACKTRACK_TARGET=${{ inputs.target_container }}" >> "$GITHUB_ENV"
+
+      - name: Start Backtrack sidecar
+        run: |
+          docker compose -f docker-compose.with-backtrack.yml up -d
+
+      - name: Wait for Backtrack health check
+        run: |
+          echo "Waiting for Backtrack agent to become healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8847/health > /dev/null 2>&1; then
+              echo "Backtrack agent is healthy!"
+              curl -s http://localhost:8847/health | python3 -m json.tool
+              exit 0
+            fi
+            echo "  Attempt $i/30 — waiting..."
+            sleep 1
+          done
+          echo "ERROR: Backtrack agent did not respond within 30 seconds."
+          exit 1
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🔍 **Backtrack** is monitoring deployment \`${{ inputs.image_tag }}\`\n\nAgent API: http://localhost:8847\nDashboard: http://localhost:3847`
+            })

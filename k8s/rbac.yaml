@@ -1,0 +1,53 @@
+
+---
+# ServiceAccount used by the backtrack-agent pod to authenticate to the API server.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backtrack-agent
+  namespace: backtrack
+
+---
+# ClusterRole grants read/watch access to pod/deployment state and metrics across all namespaces.
+# ClusterRole (not Role) is required because backtrack-agent monitors multiple namespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backtrack-agent
+rules:
+  # Pod listing and log access for the pod cache watch stream and log tailing.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+
+  # Deployment and ReplicaSet read/update for rollback: patch deployment image tag,
+  # list replicasets to identify previous revision.
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+
+  # deployments/rollback subresource is required for kubectl rollout undo.
+  - apiGroups: ["apps"]
+    resources: ["deployments/rollback"]
+    verbs: ["create"]
+
+  # metrics.k8s.io is the API group served by metrics-server.
+  # Required for kubectl top pods/nodes (used by TSD scraper for CPU/memory).
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+
+---
+# Bind the ClusterRole to the ServiceAccount.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backtrack-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: backtrack-agent
+subjects:
+  - kind: ServiceAccount
+    name: backtrack-agent
+    namespace: backtrack

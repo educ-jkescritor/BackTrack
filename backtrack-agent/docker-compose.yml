@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  # Example: your application container
+  app:
+    image: ${APP_IMAGE:-nginx:latest}
+    ports:
+      - "8080:80"
+
+  # Backtrack agent — sidecar that monitors the app container
+  backtrack:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - BACKTRACK_TARGET=app
+      - BACKTRACK_IMAGE_TAG=${BACKTRACK_IMAGE_TAG:-unknown}
+      - BACKTRACK_ROLLBACK_ENABLED=${BACKTRACK_ROLLBACK_ENABLED:-true}
+      - BACKTRACK_SCRAPE_INTERVAL=${BACKTRACK_SCRAPE_INTERVAL:-10}
+    volumes:
+      - backtrack-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8847:8847"
+    depends_on:
+      - app
+
+volumes:
+  backtrack-data:

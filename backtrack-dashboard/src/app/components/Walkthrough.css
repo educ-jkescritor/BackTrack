@@ -1,0 +1,89 @@
+/* ──────────────────────────────────────────────
+   BackTrack Interactive Demo Walkthrough Styles
+   Isolated overlay layer — z-index 9998-10000
+   ────────────────────────────────────────────── */
+
+#wt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+}
+
+#wt-spotlight {
+    position: fixed;
+    border-radius: 12px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(94, 234, 212, 0.5);
+    z-index: 9999;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    opacity: 0;
+    border: 2px solid rgba(94, 234, 212, 0.8);
+    background: transparent;
+}
+
+#wt-card {
+    position: fixed;
+    width: 320px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(94, 234, 212, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 10000;
+    color: white;
+    font-family: 'IBM Plex Sans', sans-serif;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    backdrop-filter: blur(10px);
+}
+
+.wt-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #5eead4;
+}
+
+.wt-text {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+}
+
+.wt-progress {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.wt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: background 0.3s;
+}
+
+.wt-dot.active {
+    background: #5eead4;
+    box-shadow: 0 0 8px rgba(94, 234, 212, 0.6);
+}
+
+.wt-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: right;
+    letter-spacing: 0.05em;
+}
